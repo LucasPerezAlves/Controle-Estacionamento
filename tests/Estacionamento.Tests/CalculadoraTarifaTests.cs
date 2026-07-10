@@ -6,20 +6,27 @@ namespace Estacionamento.Tests;
 
 public class CalculadoraTarifaTests
 {
-    [Fact]
-    public void Calcular_PermanenciaExatosTrintaMinutos_CobrarMetadeHoraInicial()
+
+    private readonly TabelaPreco _tabelaPreco;
+    private readonly CalculadoraTarifa _calculadora;
+
+    public CalculadoraTarifaTests()
     {
-        var tabelaPreco = new TabelaPreco
+        _tabelaPreco = new TabelaPreco
         {
             DataInicioVigencia = new DateTime(2024, 1, 1),
             DataFimVigencia = new DateTime(2024, 12, 31),
             ValorHoraInicial = 2.00m,
-            ValorHoraAdicional = 1.00m
+            ValorHoraAdicional = 1.00m  
         };
 
-        var calculadora = new CalculadoraTarifa();
+        _calculadora = new CalculadoraTarifa();
+    }
 
-        var valorPagar = calculadora.Calcular(TimeSpan.FromMinutes(30), tabelaPreco);
+    [Fact]
+    public void Calcular_PermanenciaExatosTrintaMinutos_CobrarMetadeHoraInicial()
+    {
+        var valorPagar = _calculadora.Calcular(TimeSpan.FromMinutes(30), _tabelaPreco);
 
         Assert.Equal(1.00m, valorPagar);
     }
@@ -27,18 +34,40 @@ public class CalculadoraTarifaTests
     [Fact]
     public void Calcular_PermanenciaUmaHoraExata_CobrarValorCheioHoraInicial()
     {
-        var tabelaPreco = new TabelaPreco
-        {
-            DataInicioVigencia = new DateTime(2024, 1, 1),
-            DataFimVigencia = new DateTime(2024, 12, 31),
-            ValorHoraInicial = 2.00m,
-            ValorHoraAdicional = 1.00m 
-        };
-
-        var calculadora = new CalculadoraTarifa();
-
-        var valorPagar = calculadora.Calcular(TimeSpan.FromHours(1), tabelaPreco);
+       var valorPagar = _calculadora.Calcular(TimeSpan.FromHours(1), _tabelaPreco);
 
         Assert.Equal(2.00m, valorPagar);
+    }
+
+    [Fact]
+    public void Calcular_PermanenciaUmaHoraDezMinutos_CobrarValorCheioHoraInicial()
+    {
+        var valorPagar = _calculadora.Calcular(TimeSpan.FromHours(1) + TimeSpan.FromMinutes(10), _tabelaPreco);
+
+        Assert.Equal(2.00m, valorPagar);
+    }
+
+    [Fact]
+    public void Calcular_PermanenciaUmaHoraQuinzeMinutos_CobrarHoraInicialMaisUmaHoraAdicional()
+    {
+       var valorPagar = _calculadora.Calcular(TimeSpan.FromHours(1) + TimeSpan.FromMinutes(15), _tabelaPreco);
+
+        Assert.Equal(3.00m, valorPagar); 
+    }
+
+    [Fact]
+    public void Calcular_PermanenciaDuasHorasCincoMinutos_CobrarHoraInicialMaisUmaHoraAdicional()
+    {
+        var valorPagar = _calculadora.Calcular(TimeSpan.FromHours(2) + TimeSpan.FromMinutes(5), _tabelaPreco);
+
+        Assert.Equal(3.00m, valorPagar); 
+    }
+
+    [Fact]
+    public void Calcular_PermanenciaDuasHorasQuinzeMinutos_CobrarHoraInicialMaisDuasHorasAdicionais()
+    {
+        var valorPagar = _calculadora.Calcular(TimeSpan.FromHours(2) + TimeSpan.FromMinutes(15), _tabelaPreco);
+
+        Assert.Equal(4.00m, valorPagar); 
     }
 }
