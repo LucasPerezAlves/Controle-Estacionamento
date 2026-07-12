@@ -28,4 +28,12 @@ public class RegistroEstacionamentoRepositorio
     {
         _contexto.SaveChanges();
     }
+
+    public IEnumerable<RegistroEstacionamento> ObterTodos()
+    {
+        return _contexto.RegistrosEstacionamento
+            .OrderByDescending(r => r.DataHoraEntrada)
+            .ToList();
+    }
+
 }

@@ -63,5 +63,5 @@ public class RegistradorDeSaidaTests : TesteComBancoEmMemoria
 
         acao.Should().Throw<InvalidOperationException>();
     }
-
+    
 }
