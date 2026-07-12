@@ -1,5 +1,11 @@
+using System.Globalization;
+using Estacionamento.Domain;
 using Estacionamento.Web.Data;
+using Estacionamento.Web.Services;
 using Microsoft.EntityFrameworkCore;
+
+CultureInfo.DefaultThreadCurrentCulture = CultureInfo.InvariantCulture;
+CultureInfo.DefaultThreadCurrentUICulture = CultureInfo.InvariantCulture;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -11,6 +17,9 @@ builder.Services.AddDbContext<EstacionamentoDbContext>(options =>
 
 builder.Services.AddScoped<RegistroEstacionamentoRepositorio>();
 builder.Services.AddScoped<TabelaPrecoRepositorio>();
+builder.Services.AddScoped<RegistradorDeSaida>();
+builder.Services.AddSingleton<SeletorDeTabelaPreco>();
+builder.Services.AddSingleton<CalculadoraTarifa>();
 
 var app = builder.Build();
 
@@ -31,6 +40,6 @@ app.UseAuthorization();
 
 app.MapControllerRoute(
     name: "default",
-    pattern: "{controller=Home}/{action=Index}/{id?}");
+    pattern: "{controller=Estacionamento}/{action=Index}/{id?}");
 
 app.Run();

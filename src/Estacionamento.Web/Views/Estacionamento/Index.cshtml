@@ -1,0 +1,49 @@
+@model IEnumerable<RegistroEstacionamento>
+
+@{
+    ViewData["Title"] = "Estacionamento";
+}
+
+<h1>Estacionamento</h1>
+
+<h4>Marcar Entrada</h4>
+<form asp-action="MarcarEntrada" method="post" class="row g-2 mb-4">
+    <div class="col-auto">
+        <input type="text" name="placa" class="form-control" placeholder="Placa" required />
+    </div>
+    <div class="col-auto">
+        <button type="submit" class="btn btn-primary">Marcar Entrada</button>
+    </div>
+</form>
+
+<table class="table table-striped">
+    <thead>
+        <tr>
+            <th>Placa</th>
+            <th>Data/Hora Entrada</th>
+            <th>Data/Hora Saída</th>
+            <th>Valor Pago</th>
+            <th></th>
+        </tr>
+    </thead>
+    <tbody>
+        @foreach (var registro in Model)
+        {
+            <tr>
+                <td>@registro.Placa</td>
+                <td>@registro.DataHoraEntrada.ToString("dd/MM/yyyy HH:mm")</td>
+                <td>@(registro.DataHoraSaida?.ToString("dd/MM/yyyy HH:mm") ?? "Em aberto")</td>
+                <td>@(registro.ValorPago?.ToString("C", new CultureInfo("pt-BR")) ?? "-")</td>
+                <td>
+                    @if (registro.EstaAberto)
+                    {
+                        <form asp-action="MarcarSaida" method="post" class="d-inline">
+                            <input type="hidden" name="placa" value="@registro.Placa" />
+                            <button type="submit" class="btn btn-sm btn-secondary">Marcar Saída</button>
+                        </form>
+                    }
+                </td>
+            </tr>
+        }
+    </tbody>
+</table>

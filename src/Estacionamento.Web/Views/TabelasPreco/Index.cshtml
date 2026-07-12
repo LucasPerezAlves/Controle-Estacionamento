@@ -1,0 +1,52 @@
+@model IEnumerable<TabelaPreco>
+
+@{
+    ViewData["Title"] = "Tabelas de Preço";
+}
+
+<h1>Tabelas de Preço</h1>
+
+<h4>Cadastrar Nova Tabela</h4>
+<form asp-action="Cadastrar" method="post" class="row g-2 mb-4">
+    <div class="col-auto">
+        <label class="form-label">Início da Vigência</label>
+        <input type="date" name="dataInicioVigencia" class="form-control" required />
+    </div>
+    <div class="col-auto">
+        <label class="form-label">Fim da Vigência</label>
+        <input type="date" name="dataFimVigencia" class="form-control" required />
+    </div>
+    <div class="col-auto">
+        <label class="form-label">Valor Hora Inicial</label>
+        <input type="number" step="0.01" name="valorHoraInicial" class="form-control" required />
+    </div>
+    <div class="col-auto">
+        <label class="form-label">Valor Hora Adicional</label>
+        <input type="number" step="0.01" name="valorHoraAdicional" class="form-control" required />
+    </div>
+    <div class="col-auto align-self-end">
+        <button type="submit" class="btn btn-primary">Cadastrar</button>
+    </div>
+</form>
+
+<table class="table table-striped">
+    <thead>
+        <tr>
+            <th>Início da Vigência</th>
+            <th>Fim da Vigência</th>
+            <th>Valor Hora Inicial</th>
+            <th>Valor Hora Adicional</th>
+        </tr>
+    </thead>
+    <tbody>
+        @foreach (var tabela in Model)
+        {
+            <tr>
+                <td>@tabela.DataInicioVigencia.ToString("dd/MM/yyyy")</td>
+                <td>@tabela.DataFimVigencia.ToString("dd/MM/yyyy")</td>
+                <td>@tabela.ValorHoraInicial.ToString("C", new CultureInfo("pt-BR"))</td>
+                <td>@tabela.ValorHoraAdicional.ToString("C", new CultureInfo("pt-BR"))</td>
+            </tr>
+        }
+    </tbody>
+</table>
