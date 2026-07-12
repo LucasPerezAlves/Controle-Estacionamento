@@ -4,11 +4,17 @@ namespace Estacionamento.Domain;
 
 public class RegistroEstacionamento
 {
-    public string Placa { get; }
-    public DateTime DataHoraEntrada { get; }
+    public int Id { get; private set; }
+    public string Placa { get; private set; }
+    public DateTime DataHoraEntrada { get; private set; }
     public DateTime? DataHoraSaida { get; private set; }
     public decimal? ValorPago { get; private set; }
     public bool EstaAberto => DataHoraSaida == null;
+
+    private RegistroEstacionamento()
+    {
+        Placa = null!;
+    }
 
     public RegistroEstacionamento(string placa, DateTime dataHoraEntrada)
     {
@@ -18,7 +24,6 @@ public class RegistroEstacionamento
 
     public void RegistrarSaida(DateTime dataHoraSaida, decimal valorPago)
     {
-
         if (!EstaAberto)
         {
             throw new InvalidOperationException("Este registro ja foi encerrado.");
