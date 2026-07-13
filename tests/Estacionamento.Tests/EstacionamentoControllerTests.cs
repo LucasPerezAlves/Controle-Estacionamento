@@ -1,11 +1,14 @@
 using System;
+using System.Collections.Generic;
 using System.Linq;
 using Estacionamento.Domain;
 using Estacionamento.Web.Controllers;
 using Estacionamento.Web.Data;
 using Estacionamento.Web.Services;
 using FluentAssertions;
+using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Mvc.ViewFeatures;
 using Xunit;
 
 namespace Estacionamento.Tests;
@@ -21,7 +24,25 @@ public class EstacionamentoControllerTests : TesteComBancoEmMemoria
         _registroRepositorio = new RegistroEstacionamentoRepositorio(Contexto);
         _tabelaPrecoRepositorio = new TabelaPrecoRepositorio(Contexto);
         var registradorDeSaida = new RegistradorDeSaida(_registroRepositorio, _tabelaPrecoRepositorio, new SeletorDeTabelaPreco(), new CalculadoraTarifa());
-        _controller = new EstacionamentoController(_registroRepositorio, registradorDeSaida);
+        _controller = new EstacionamentoController(_registroRepositorio, registradorDeSaida)
+        {
+            TempData = new TempDataDictionary(new DefaultHttpContext(), new TempDataProviderFake())
+        };
+    }
+
+    private class TempDataProviderFake : ITempDataProvider
+    {
+        public IDictionary<string, object> LoadTempData(HttpContext context) => new Dictionary<string, object>();
+
+        public void SaveTempData(HttpContext context, IDictionary<string, object> values) { }
+    }
+
+    [Fact]
+    public void MarcarEntrada_ComPlacaEmBranco_NaoDeveCriarRegistro()
+    {
+        _controller.MarcarEntrada("   ");
+
+        _registroRepositorio.ObterTodos().Should().BeEmpty();
     }
 
     [Fact]
@@ -34,6 +55,17 @@ public class EstacionamentoControllerTests : TesteComBancoEmMemoria
         registro!.DataHoraEntrada.Should().BeCloseTo(DateTime.Now, TimeSpan.FromSeconds(5));
 
         resultado.Should().BeOfType<RedirectToActionResult>();
+    }
+
+    [Fact]
+    public void MarcarEntrada_QuandoJaExisteRegistroAbertoParaAPlaca_NaoDeveCriarNovoRegistro()
+    {
+        _controller.MarcarEntrada("ABC1234");
+
+        _controller.MarcarEntrada("ABC1234");
+
+        var registros = _registroRepositorio.ObterTodos();
+        registros.Should().ContainSingle(r => r.Placa == "ABC1234");
     }
 
     [Fact]

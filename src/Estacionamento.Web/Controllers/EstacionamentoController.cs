@@ -26,6 +26,18 @@ public class EstacionamentoController : Controller
     [HttpPost]
     public IActionResult MarcarEntrada(string placa)
     {
+        if (string.IsNullOrWhiteSpace(placa))
+        {
+            TempData["Erro"] = "Informe uma placa valida.";
+            return RedirectToAction(nameof(Index));
+        }
+
+        if (_registroRepositorio.BuscarAbertoPorPlaca(placa) is not null)
+        {
+            TempData["Erro"] = $"Ja existe um registro aberto para a placa {placa}.";
+            return RedirectToAction(nameof(Index));
+        }
+
         var registro = new RegistroEstacionamento(placa, DateTime.Now);
         _registroRepositorio.Adicionar(registro);
         _registroRepositorio.Salvar();
@@ -36,7 +48,14 @@ public class EstacionamentoController : Controller
     [HttpPost]
     public IActionResult MarcarSaida(string placa)
     {
-        _registradorDeSaida.Registrar(placa, DateTime.Now);
+        try
+        {
+            _registradorDeSaida.Registrar(placa, DateTime.Now);
+        }
+        catch (InvalidOperationException ex)
+        {
+            TempData["Erro"] = ex.Message;
+        }
 
         return RedirectToAction(nameof(Index));
     }
