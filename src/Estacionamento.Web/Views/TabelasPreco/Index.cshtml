@@ -9,6 +9,13 @@
     <p class="text-sm text-zinc-500 dark:text-zinc-400 mt-1">Parametrize os valores cobrados por período de vigência.</p>
 </div>
 
+@if (TempData["Erro"] is string erro)
+{
+    <div class="mb-6 rounded-lg border border-red-200 dark:border-red-900 bg-red-50 dark:bg-red-950/30 text-red-700 dark:text-red-400 text-sm px-4 py-3">
+        @erro
+    </div>
+}
+
 <section class="rounded-xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 p-5 shadow-sm mb-10">
     <h2 class="text-sm font-semibold text-zinc-700 dark:text-zinc-300 mb-3">Cadastrar Nova Tabela</h2>
     <form asp-action="Cadastrar" method="post" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3 items-end">

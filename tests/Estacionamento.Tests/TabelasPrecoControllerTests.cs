@@ -4,7 +4,9 @@ using Estacionamento.Web.Controllers;
 using Estacionamento.Web.Data;
 using FluentAssertions;
 using System.Collections.Generic;
+using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Mvc.ViewFeatures;
 using Xunit;
 
 namespace Estacionamento.Tests;
@@ -17,7 +19,17 @@ public class TabelasPrecoControllerTests : TesteComBancoEmMemoria
     public TabelasPrecoControllerTests()
     {
         _tabelaPrecoRepositorio = new TabelaPrecoRepositorio(Contexto);
-        _controller = new TabelasPrecoController(_tabelaPrecoRepositorio);
+        _controller = new TabelasPrecoController(_tabelaPrecoRepositorio)
+        {
+            TempData = new TempDataDictionary(new DefaultHttpContext(), new TempDataProviderFake())
+        };
+    }
+
+    private class TempDataProviderFake : ITempDataProvider
+    {
+        public IDictionary<string, object> LoadTempData(HttpContext context) => new Dictionary<string, object>();
+
+        public void SaveTempData(HttpContext context, IDictionary<string, object> values) { }
     }
 
     [Fact]
@@ -37,6 +49,24 @@ public class TabelasPrecoControllerTests : TesteComBancoEmMemoria
             t.ValorHoraAdicional == 1.00m);
 
         resultado.Should().BeOfType<RedirectToActionResult>();
+    }
+
+    [Fact]
+    public void Cadastrar_ComDataFimAnteriorADataInicio_NaoDevePersistirTabela()
+    {
+        _controller.Cadastrar(new DateTime(2024, 12, 31), new DateTime(2024, 1, 1), 2.00m, 1.00m);
+
+        _tabelaPrecoRepositorio.ObterTodas().Should().BeEmpty();
+    }
+
+    [Fact]
+    public void Cadastrar_ComVigenciaSobrepostaAOutraExistente_NaoDevePersistirNovaTabela()
+    {
+        _controller.Cadastrar(new DateTime(2024, 1, 1), new DateTime(2024, 12, 31), 2.00m, 1.00m);
+
+        _controller.Cadastrar(new DateTime(2024, 6, 1), new DateTime(2025, 6, 1), 3.00m, 1.50m);
+
+        _tabelaPrecoRepositorio.ObterTodas().Should().ContainSingle();
     }
 
     [Fact]
