@@ -11,7 +11,7 @@ namespace Estacionamento.Tests;
 public class RegistradorDeSaidaTests : TesteComBancoEmMemoria
 {
     [Fact]
-    public void Registrar_QuandoExisteRegistroAbertoETabelaVigente_DeveCalcularECommRegistrarValorPago()
+    public void Registrar_QuandoExisteRegistroAbertoETabelaVigente_DeveCalcularERegistrarValorPago()
     {
         var registroRepositorio = new RegistroEstacionamentoRepositorio(Contexto);
         var tabelaPrecoRepositorio = new TabelaPrecoRepositorio(Contexto);

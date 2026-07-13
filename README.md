@@ -29,10 +29,12 @@ Estacionamento.sln
 │   ├── Estacionamento.Domain/        # Regras de negócio (entidades, cálculo de tarifa)
 │   └── Estacionamento.Web/           # Interface web (ASP.NET Core MVC)
 │       ├── Controllers/              # EstacionamentoController, TabelasPrecoController, HomeController
-│       ├── Data/                     # DbContext e repositórios (EF Core + SQLite)
-│       ├── Services/                 # RegistradorDeSaida (orquestração de negócio)
 │       ├── Views/                    # Razor Views
-│       └── Migrations/               # Migrations do EF Core
+│       ├── Migrations/               # Migrations do EF Core
+│       ├── EstacionamentoDbContext.cs           # DbContext (EF Core + SQLite)
+│       ├── RegistroEstacionamentoRepositorio.cs # Repositório de registros de entrada/saída
+│       ├── TabelaPrecoRepositorio.cs            # Repositório de tabelas de preço
+│       └── RegistradorSaida.cs                  # Orquestra o cálculo e o fechamento da saída
 └── tests/
     └── Estacionamento.Tests/         # Testes automatizados (xUnit + FluentAssertions)
 ```
