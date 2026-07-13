@@ -21,6 +21,7 @@ builder.Services.AddDbContext<EstacionamentoDbContext>(options =>
 
 builder.Services.AddScoped<IRegistroEstacionamentoRepositorio, RegistroEstacionamentoRepositorio>();
 builder.Services.AddScoped<ITabelaPrecoRepositorio, TabelaPrecoRepositorio>();
+builder.Services.AddScoped<RegistradorDeEntrada>();
 builder.Services.AddScoped<RegistradorDeSaida>();
 builder.Services.AddSingleton<SeletorDeTabelaPreco>();
 builder.Services.AddSingleton<CalculadoraTarifa>();

@@ -27,10 +27,25 @@ public class RegistroEstacionamentoRepositorio : IRegistroEstacionamentoReposito
         return _contexto.SaveChangesAsync();
     }
 
-    public async Task<IEnumerable<RegistroEstacionamento>> ObterTodosAsync()
+    public async Task<IEnumerable<RegistroEstacionamento>> ObterAbertosAsync()
+    {
+        return await _contexto.RegistrosEstacionamento
+            .Where(r => r.DataHoraSaida == null)
+            .OrderByDescending(r => r.DataHoraEntrada)
+            .ToListAsync();
+    }
+
+    public async Task<IEnumerable<RegistroEstacionamento>> ObterHistoricoAsync(int pagina, int tamanhoPagina)
     {
         return await _contexto.RegistrosEstacionamento
             .OrderByDescending(r => r.DataHoraEntrada)
+            .Skip((pagina - 1) * tamanhoPagina)
+            .Take(tamanhoPagina)
             .ToListAsync();
+    }
+
+    public Task<int> ContarTodosAsync()
+    {
+        return _contexto.RegistrosEstacionamento.CountAsync();
     }
 }

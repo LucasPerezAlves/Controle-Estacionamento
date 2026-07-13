@@ -4,6 +4,7 @@ using System.Linq;
 using Estacionamento.Domain;
 using Estacionamento.Web.Controllers;
 using Estacionamento.Web.Data;
+using Estacionamento.Web.Models;
 using Estacionamento.Web.Services;
 using FluentAssertions;
 using Microsoft.AspNetCore.Http;
@@ -24,8 +25,9 @@ public class EstacionamentoControllerTests : TesteComBancoEmMemoria
     {
         _registroRepositorio = new RegistroEstacionamentoRepositorio(Contexto);
         _tabelaPrecoRepositorio = new TabelaPrecoRepositorio(Contexto);
+        var registradorDeEntrada = new RegistradorDeEntrada(_registroRepositorio);
         var registradorDeSaida = new RegistradorDeSaida(_registroRepositorio, _tabelaPrecoRepositorio, new SeletorDeTabelaPreco(), new CalculadoraTarifa());
-        _controller = new EstacionamentoController(_registroRepositorio, registradorDeSaida, NullLogger<EstacionamentoController>.Instance)
+        _controller = new EstacionamentoController(_registroRepositorio, registradorDeEntrada, registradorDeSaida, NullLogger<EstacionamentoController>.Instance)
         {
             TempData = new TempDataDictionary(new DefaultHttpContext(), new TempDataProviderFake())
         };
@@ -43,7 +45,7 @@ public class EstacionamentoControllerTests : TesteComBancoEmMemoria
     {
         await _controller.MarcarEntrada("   ");
 
-        (await _registroRepositorio.ObterTodosAsync()).Should().BeEmpty();
+        (await _registroRepositorio.ObterAbertosAsync()).Should().BeEmpty();
     }
 
     [Fact]
@@ -65,7 +67,7 @@ public class EstacionamentoControllerTests : TesteComBancoEmMemoria
 
         await _controller.MarcarEntrada("ABC1234");
 
-        var registros = await _registroRepositorio.ObterTodosAsync();
+        var registros = await _registroRepositorio.ObterAbertosAsync();
         registros.Should().ContainSingle(r => r.Placa == "ABC1234");
     }
 
@@ -101,7 +103,29 @@ public class EstacionamentoControllerTests : TesteComBancoEmMemoria
         var resultado = await _controller.Index();
 
         var viewResult = resultado.Should().BeOfType<ViewResult>().Subject;
-        var model = viewResult.Model.Should().BeAssignableTo<IEnumerable<RegistroEstacionamento>>().Subject;
-        model.Should().HaveCount(2);
+        var model = viewResult.Model.Should().BeOfType<EstacionamentoIndexViewModel>().Subject;
+        model.Abertos.Should().HaveCount(2);
+        model.Historico.Should().HaveCount(2);
+        model.PaginaAtual.Should().Be(1);
+        model.TotalPaginas.Should().Be(1);
+    }
+
+    [Fact]
+    public async Task Index_ComMaisRegistrosQueOTamanhoDaPagina_DevePaginarOHistorico()
+    {
+        for (var i = 0; i < 15; i++)
+        {
+            _registroRepositorio.Adicionar(new RegistroEstacionamento($"PLACA{i:D2}", new DateTime(2024, 1, 1).AddDays(i)));
+        }
+        await _registroRepositorio.SalvarAsync();
+
+        var primeiraPagina = await _controller.Index();
+        var primeiraPaginaModel = ((ViewResult)primeiraPagina).Model.Should().BeOfType<EstacionamentoIndexViewModel>().Subject;
+        primeiraPaginaModel.Historico.Should().HaveCount(10);
+        primeiraPaginaModel.TotalPaginas.Should().Be(2);
+
+        var segundaPagina = await _controller.Index(pagina: 2);
+        var segundaPaginaModel = ((ViewResult)segundaPagina).Model.Should().BeOfType<EstacionamentoIndexViewModel>().Subject;
+        segundaPaginaModel.Historico.Should().HaveCount(5);
     }
 }

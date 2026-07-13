@@ -1,5 +1,5 @@
-using Estacionamento.Domain;
 using Estacionamento.Web.Data;
+using Estacionamento.Web.Models;
 using Estacionamento.Web.Services;
 using Microsoft.AspNetCore.Mvc;
 
@@ -7,47 +7,61 @@ namespace Estacionamento.Web.Controllers;
 
 public class EstacionamentoController : Controller
 {
+    private const int TamanhoPaginaHistorico = 10;
+
     private readonly IRegistroEstacionamentoRepositorio _registroRepositorio;
+    private readonly RegistradorDeEntrada _registradorDeEntrada;
     private readonly RegistradorDeSaida _registradorDeSaida;
     private readonly ILogger<EstacionamentoController> _logger;
 
     public EstacionamentoController(
         IRegistroEstacionamentoRepositorio registroRepositorio,
+        RegistradorDeEntrada registradorDeEntrada,
         RegistradorDeSaida registradorDeSaida,
         ILogger<EstacionamentoController> logger)
     {
         _registroRepositorio = registroRepositorio;
+        _registradorDeEntrada = registradorDeEntrada;
         _registradorDeSaida = registradorDeSaida;
         _logger = logger;
     }
 
-    public async Task<IActionResult> Index()
+    public async Task<IActionResult> Index(int pagina = 1)
     {
-        var registros = await _registroRepositorio.ObterTodosAsync();
-        return View(registros);
+        if (pagina < 1)
+        {
+            pagina = 1;
+        }
+
+        var abertos = await _registroRepositorio.ObterAbertosAsync();
+        var historico = await _registroRepositorio.ObterHistoricoAsync(pagina, TamanhoPaginaHistorico);
+        var totalRegistros = await _registroRepositorio.ContarTodosAsync();
+        var totalPaginas = Math.Max(1, (int)Math.Ceiling(totalRegistros / (double)TamanhoPaginaHistorico));
+
+        var viewModel = new EstacionamentoIndexViewModel
+        {
+            Abertos = abertos.ToList(),
+            Historico = historico.ToList(),
+            PaginaAtual = pagina,
+            TotalPaginas = totalPaginas
+        };
+
+        return View(viewModel);
     }
 
     [HttpPost]
     public async Task<IActionResult> MarcarEntrada(string placa)
     {
-        if (string.IsNullOrWhiteSpace(placa))
+        try
         {
-            TempData["Erro"] = "Informe uma placa valida.";
-            return RedirectToAction(nameof(Index));
+            await _registradorDeEntrada.RegistrarAsync(placa, DateTime.Now);
+            _logger.LogInformation("Entrada registrada para a placa {Placa}.", placa);
         }
-
-        if (await _registroRepositorio.BuscarAbertoPorPlacaAsync(placa) is not null)
+        catch (Exception ex) when (ex is ArgumentException or InvalidOperationException)
         {
-            _logger.LogWarning("Tentativa de marcar entrada para a placa {Placa}, que ja possui registro aberto.", placa);
-            TempData["Erro"] = $"Ja existe um registro aberto para a placa {placa}.";
-            return RedirectToAction(nameof(Index));
+            _logger.LogWarning(ex, "Falha ao marcar entrada para a placa {Placa}.", placa);
+            TempData["Erro"] = ex.Message;
         }
-
-        var registro = new RegistroEstacionamento(placa, DateTime.Now);
-        _registroRepositorio.Adicionar(registro);
-        await _registroRepositorio.SalvarAsync();
-
-        _logger.LogInformation("Entrada registrada para a placa {Placa}.", placa);
 
         return RedirectToAction(nameof(Index));
     }
