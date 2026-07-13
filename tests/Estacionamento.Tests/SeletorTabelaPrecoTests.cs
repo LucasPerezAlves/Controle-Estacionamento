@@ -11,13 +11,7 @@ public class SeletorDeTabelaPrecoTests
     [Fact]
     public void Selecionar_QuandoDataEstaDentroDaVigencia_DeveRetornarTabelaCorrespondente()
     {
-        var tabela = new TabelaPreco
-        {
-            DataInicioVigencia = new DateTime(2024, 1, 1),
-            DataFimVigencia = new DateTime(2024, 12, 31),
-            ValorHoraInicial = 2.00m,
-            ValorHoraAdicional = 1.00m
-        };
+        var tabela = new TabelaPreco(new DateTime(2024, 1, 1), new DateTime(2024, 12, 31), 2.00m, 1.00m);
 
         var tabelas = new List<TabelaPreco> { tabela };
 
@@ -31,13 +25,7 @@ public class SeletorDeTabelaPrecoTests
     [Fact]
     public void Selecionar_QuandoNenhumaTabelaCobreAData_DeveLancarExcecao()
     {
-        var tabela = new TabelaPreco
-        {
-            DataInicioVigencia = new DateTime(2024, 1, 1),
-            DataFimVigencia = new DateTime(2024, 12, 31),
-            ValorHoraInicial = 2.00m,
-            ValorHoraAdicional = 1.00m
-        };
+        var tabela = new TabelaPreco(new DateTime(2024, 1, 1), new DateTime(2024, 12, 31), 2.00m, 1.00m);
 
         var tabelas = new List<TabelaPreco> { tabela };
 

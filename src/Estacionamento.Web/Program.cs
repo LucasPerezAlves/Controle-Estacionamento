@@ -19,8 +19,8 @@ builder.Services.AddControllersWithViews(options =>
 builder.Services.AddDbContext<EstacionamentoDbContext>(options =>
     options.UseSqlite(builder.Configuration.GetConnectionString("DefaultConnection")));
 
-builder.Services.AddScoped<RegistroEstacionamentoRepositorio>();
-builder.Services.AddScoped<TabelaPrecoRepositorio>();
+builder.Services.AddScoped<IRegistroEstacionamentoRepositorio, RegistroEstacionamentoRepositorio>();
+builder.Services.AddScoped<ITabelaPrecoRepositorio, TabelaPrecoRepositorio>();
 builder.Services.AddScoped<RegistradorDeSaida>();
 builder.Services.AddSingleton<SeletorDeTabelaPreco>();
 builder.Services.AddSingleton<CalculadoraTarifa>();

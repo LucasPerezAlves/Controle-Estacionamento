@@ -1,4 +1,3 @@
-using System;
 using Estacionamento.Domain;
 using Estacionamento.Web.Data;
 using Estacionamento.Web.Services;
@@ -8,23 +7,28 @@ namespace Estacionamento.Web.Controllers;
 
 public class EstacionamentoController : Controller
 {
-    private readonly RegistroEstacionamentoRepositorio _registroRepositorio;
+    private readonly IRegistroEstacionamentoRepositorio _registroRepositorio;
     private readonly RegistradorDeSaida _registradorDeSaida;
+    private readonly ILogger<EstacionamentoController> _logger;
 
-    public EstacionamentoController(RegistroEstacionamentoRepositorio registroRepositorio, RegistradorDeSaida registradorDeSaida)
+    public EstacionamentoController(
+        IRegistroEstacionamentoRepositorio registroRepositorio,
+        RegistradorDeSaida registradorDeSaida,
+        ILogger<EstacionamentoController> logger)
     {
         _registroRepositorio = registroRepositorio;
         _registradorDeSaida = registradorDeSaida;
+        _logger = logger;
     }
 
-    public IActionResult Index()
+    public async Task<IActionResult> Index()
     {
-        var registros = _registroRepositorio.ObterTodos();
+        var registros = await _registroRepositorio.ObterTodosAsync();
         return View(registros);
     }
 
     [HttpPost]
-    public IActionResult MarcarEntrada(string placa)
+    public async Task<IActionResult> MarcarEntrada(string placa)
     {
         if (string.IsNullOrWhiteSpace(placa))
         {
@@ -32,32 +36,36 @@ public class EstacionamentoController : Controller
             return RedirectToAction(nameof(Index));
         }
 
-        if (_registroRepositorio.BuscarAbertoPorPlaca(placa) is not null)
+        if (await _registroRepositorio.BuscarAbertoPorPlacaAsync(placa) is not null)
         {
+            _logger.LogWarning("Tentativa de marcar entrada para a placa {Placa}, que ja possui registro aberto.", placa);
             TempData["Erro"] = $"Ja existe um registro aberto para a placa {placa}.";
             return RedirectToAction(nameof(Index));
         }
 
         var registro = new RegistroEstacionamento(placa, DateTime.Now);
         _registroRepositorio.Adicionar(registro);
-        _registroRepositorio.Salvar();
+        await _registroRepositorio.SalvarAsync();
+
+        _logger.LogInformation("Entrada registrada para a placa {Placa}.", placa);
 
         return RedirectToAction(nameof(Index));
     }
 
     [HttpPost]
-    public IActionResult MarcarSaida(string placa)
+    public async Task<IActionResult> MarcarSaida(string placa)
     {
         try
         {
-            _registradorDeSaida.Registrar(placa, DateTime.Now);
+            await _registradorDeSaida.RegistrarAsync(placa, DateTime.Now);
+            _logger.LogInformation("Saida registrada para a placa {Placa}.", placa);
         }
         catch (InvalidOperationException ex)
         {
+            _logger.LogWarning(ex, "Falha ao marcar saida para a placa {Placa}.", placa);
             TempData["Erro"] = ex.Message;
         }
 
         return RedirectToAction(nameof(Index));
     }
-
 }

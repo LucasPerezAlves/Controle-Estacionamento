@@ -9,6 +9,7 @@ using FluentAssertions;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.ViewFeatures;
+using Microsoft.Extensions.Logging.Abstractions;
 using Xunit;
 
 namespace Estacionamento.Tests;
@@ -24,7 +25,7 @@ public class EstacionamentoControllerTests : TesteComBancoEmMemoria
         _registroRepositorio = new RegistroEstacionamentoRepositorio(Contexto);
         _tabelaPrecoRepositorio = new TabelaPrecoRepositorio(Contexto);
         var registradorDeSaida = new RegistradorDeSaida(_registroRepositorio, _tabelaPrecoRepositorio, new SeletorDeTabelaPreco(), new CalculadoraTarifa());
-        _controller = new EstacionamentoController(_registroRepositorio, registradorDeSaida)
+        _controller = new EstacionamentoController(_registroRepositorio, registradorDeSaida, NullLogger<EstacionamentoController>.Instance)
         {
             TempData = new TempDataDictionary(new DefaultHttpContext(), new TempDataProviderFake())
         };
@@ -38,19 +39,19 @@ public class EstacionamentoControllerTests : TesteComBancoEmMemoria
     }
 
     [Fact]
-    public void MarcarEntrada_ComPlacaEmBranco_NaoDeveCriarRegistro()
+    public async Task MarcarEntrada_ComPlacaEmBranco_NaoDeveCriarRegistro()
     {
-        _controller.MarcarEntrada("   ");
+        await _controller.MarcarEntrada("   ");
 
-        _registroRepositorio.ObterTodos().Should().BeEmpty();
+        (await _registroRepositorio.ObterTodosAsync()).Should().BeEmpty();
     }
 
     [Fact]
-    public void MarcarEntrada_ComPlacaValida_DeveCriarRegistroAbertoERedirecionarParaIndex()
+    public async Task MarcarEntrada_ComPlacaValida_DeveCriarRegistroAbertoERedirecionarParaIndex()
     {
-        var resultado = _controller.MarcarEntrada("ABC1234");
+        var resultado = await _controller.MarcarEntrada("ABC1234");
 
-        var registro = _registroRepositorio.BuscarAbertoPorPlaca("ABC1234");
+        var registro = await _registroRepositorio.BuscarAbertoPorPlacaAsync("ABC1234");
         registro.Should().NotBeNull();
         registro!.DataHoraEntrada.Should().BeCloseTo(DateTime.Now, TimeSpan.FromSeconds(5));
 
@@ -58,35 +59,29 @@ public class EstacionamentoControllerTests : TesteComBancoEmMemoria
     }
 
     [Fact]
-    public void MarcarEntrada_QuandoJaExisteRegistroAbertoParaAPlaca_NaoDeveCriarNovoRegistro()
+    public async Task MarcarEntrada_QuandoJaExisteRegistroAbertoParaAPlaca_NaoDeveCriarNovoRegistro()
     {
-        _controller.MarcarEntrada("ABC1234");
+        await _controller.MarcarEntrada("ABC1234");
 
-        _controller.MarcarEntrada("ABC1234");
+        await _controller.MarcarEntrada("ABC1234");
 
-        var registros = _registroRepositorio.ObterTodos();
+        var registros = await _registroRepositorio.ObterTodosAsync();
         registros.Should().ContainSingle(r => r.Placa == "ABC1234");
     }
 
     [Fact]
-    public void MarcarSaida_QuandoExisteRegistroAbertoETabelaVigente_DeveFecharRegistroERedirecionarParaIndex()
+    public async Task MarcarSaida_QuandoExisteRegistroAbertoETabelaVigente_DeveFecharRegistroERedirecionarParaIndex()
     {
         var dataEntrada = DateTime.Now.AddHours(-1);
         var registro = new RegistroEstacionamento("ABC1234", dataEntrada);
         _registroRepositorio.Adicionar(registro);
-        _registroRepositorio.Salvar();
+        await _registroRepositorio.SalvarAsync();
 
-        var tabela = new TabelaPreco
-        {
-            DataInicioVigencia = dataEntrada.Date.AddYears(-1),
-            DataFimVigencia = dataEntrada.Date.AddYears(1),
-            ValorHoraInicial = 2.00m,
-            ValorHoraAdicional = 1.00m
-        };
+        var tabela = new TabelaPreco(dataEntrada.Date.AddYears(-1), dataEntrada.Date.AddYears(1), 2.00m, 1.00m);
         _tabelaPrecoRepositorio.Adicionar(tabela);
-        _tabelaPrecoRepositorio.Salvar();
+        await _tabelaPrecoRepositorio.SalvarAsync();
 
-        var resultado = _controller.MarcarSaida("ABC1234");
+        var resultado = await _controller.MarcarSaida("ABC1234");
 
         var registroFechado = Contexto.RegistrosEstacionamento.Single(r => r.Placa == "ABC1234");
         registroFechado.EstaAberto.Should().BeFalse();
@@ -95,15 +90,15 @@ public class EstacionamentoControllerTests : TesteComBancoEmMemoria
     }
 
     [Fact]
-    public void Index_QuandoExistemRegistros_DeveListarTodosNoModel()
+    public async Task Index_QuandoExistemRegistros_DeveListarTodosNoModel()
     {
         var registroUm = new RegistroEstacionamento("ABC1234", new DateTime(2024, 5, 10, 8, 0, 0));
         var registroDois = new RegistroEstacionamento("XYZ9999", new DateTime(2024, 5, 11, 9, 0, 0));
         _registroRepositorio.Adicionar(registroUm);
         _registroRepositorio.Adicionar(registroDois);
-        _registroRepositorio.Salvar();
+        await _registroRepositorio.SalvarAsync();
 
-        var resultado =  _controller.Index();
+        var resultado = await _controller.Index();
 
         var viewResult = resultado.Should().BeOfType<ViewResult>().Subject;
         var model = viewResult.Model.Should().BeAssignableTo<IEnumerable<RegistroEstacionamento>>().Subject;
