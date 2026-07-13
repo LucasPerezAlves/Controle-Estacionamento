@@ -12,13 +12,7 @@ public class CalculadoraTarifaTests
 
     public CalculadoraTarifaTests()
     {
-        _tabelaPreco = new TabelaPreco
-        {
-            DataInicioVigencia = new DateTime(2024, 1, 1),
-            DataFimVigencia = new DateTime(2024, 12, 31),
-            ValorHoraInicial = 2.00m,
-            ValorHoraAdicional = 1.00m
-        };
+        _tabelaPreco = new TabelaPreco(new DateTime(2024, 1, 1), new DateTime(2024, 12, 31), 2.00m, 1.00m);
 
         _calculadora = new CalculadoraTarifa();
     }

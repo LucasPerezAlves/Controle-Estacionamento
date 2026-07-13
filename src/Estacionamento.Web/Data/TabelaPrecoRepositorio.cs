@@ -1,10 +1,9 @@
-using System;
-using System.Collections.Generic;
 using Estacionamento.Domain;
+using Microsoft.EntityFrameworkCore;
 
 namespace Estacionamento.Web.Data;
 
-public class TabelaPrecoRepositorio
+public class TabelaPrecoRepositorio : ITabelaPrecoRepositorio
 {
     private readonly EstacionamentoDbContext _contexto;
 
@@ -18,13 +17,13 @@ public class TabelaPrecoRepositorio
         _contexto.TabelasPreco.Add(tabela);
     }
 
-    public IEnumerable<TabelaPreco> ObterTodas()
+    public async Task<IEnumerable<TabelaPreco>> ObterTodasAsync()
     {
-        return _contexto.TabelasPreco.ToList();
+        return await _contexto.TabelasPreco.ToListAsync();
     }
 
-    public void Salvar()
+    public Task SalvarAsync()
     {
-        _contexto.SaveChanges();
+        return _contexto.SaveChangesAsync();
     }
 }

@@ -1,8 +1,8 @@
-@model IEnumerable<RegistroEstacionamento>
+@model EstacionamentoIndexViewModel
 
 @{
     ViewData["Title"] = "Estacionamento";
-    var abertos = Model.Where(r => r.EstaAberto).ToList();
+    var abertos = Model.Abertos;
     var totalVagas = Math.Max(12, ((abertos.Count + 3) / 4) * 4);
 }
 
@@ -89,7 +89,7 @@
                     </tr>
                 </thead>
                 <tbody class="divide-y divide-zinc-100 dark:divide-zinc-800">
-                    @foreach (var registro in Model)
+                    @foreach (var registro in Model.Historico)
                     {
                         <tr class="hover:bg-zinc-50 dark:hover:bg-zinc-800/50 transition-colors">
                             <td class="px-4 py-3 font-semibold placa">@registro.Placa</td>
@@ -122,4 +122,35 @@
             </table>
         </div>
     </div>
+
+    @if (Model.TotalPaginas > 1)
+    {
+        <div class="flex items-center justify-between mt-4 text-sm">
+            @if (Model.PaginaAtual > 1)
+            {
+                <a asp-action="Index" asp-route-pagina="@(Model.PaginaAtual - 1)"
+                   class="px-3 py-1.5 rounded-lg border border-zinc-200 dark:border-zinc-800 text-zinc-600 dark:text-zinc-400 hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors">
+                    Anterior
+                </a>
+            }
+            else
+            {
+                <span class="px-3 py-1.5 rounded-lg text-zinc-300 dark:text-zinc-700">Anterior</span>
+            }
+
+            <span class="text-zinc-500 dark:text-zinc-400">Página @Model.PaginaAtual de @Model.TotalPaginas</span>
+
+            @if (Model.PaginaAtual < Model.TotalPaginas)
+            {
+                <a asp-action="Index" asp-route-pagina="@(Model.PaginaAtual + 1)"
+                   class="px-3 py-1.5 rounded-lg border border-zinc-200 dark:border-zinc-800 text-zinc-600 dark:text-zinc-400 hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors">
+                    Próxima
+                </a>
+            }
+            else
+            {
+                <span class="px-3 py-1.5 rounded-lg text-zinc-300 dark:text-zinc-700">Próxima</span>
+            }
+        </div>
+    }
 </section>

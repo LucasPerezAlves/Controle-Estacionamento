@@ -11,4 +11,10 @@ public class EstacionamentoDbContext : DbContext
 
     public DbSet<RegistroEstacionamento> RegistrosEstacionamento => Set<RegistroEstacionamento>();
     public DbSet<TabelaPreco> TabelasPreco => Set<TabelaPreco>();
+
+    protected override void OnModelCreating(ModelBuilder modelBuilder)
+    {
+        modelBuilder.Entity<RegistroEstacionamento>()
+            .HasIndex(r => r.Placa);
+    }
 }

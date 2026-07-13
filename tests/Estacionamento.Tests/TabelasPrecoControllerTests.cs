@@ -7,6 +7,7 @@ using System.Collections.Generic;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.ViewFeatures;
+using Microsoft.Extensions.Logging.Abstractions;
 using Xunit;
 
 namespace Estacionamento.Tests;
@@ -19,7 +20,7 @@ public class TabelasPrecoControllerTests : TesteComBancoEmMemoria
     public TabelasPrecoControllerTests()
     {
         _tabelaPrecoRepositorio = new TabelaPrecoRepositorio(Contexto);
-        _controller = new TabelasPrecoController(_tabelaPrecoRepositorio)
+        _controller = new TabelasPrecoController(_tabelaPrecoRepositorio, NullLogger<TabelasPrecoController>.Instance)
         {
             TempData = new TempDataDictionary(new DefaultHttpContext(), new TempDataProviderFake())
         };
@@ -33,15 +34,15 @@ public class TabelasPrecoControllerTests : TesteComBancoEmMemoria
     }
 
     [Fact]
-    public void Cadastrar_ComDadosValidos_DevePersistirTabelaERedirecionarParaIndex()
+    public async Task Cadastrar_ComDadosValidos_DevePersistirTabelaERedirecionarParaIndex()
     {
-        var resultado = _controller.Cadastrar(
+        var resultado = await _controller.Cadastrar(
             new DateTime(2024, 1, 1),
             new DateTime(2024, 12, 31),
             2.00m,
             1.00m);
 
-        var tabelas = _tabelaPrecoRepositorio.ObterTodas();
+        var tabelas = await _tabelaPrecoRepositorio.ObterTodasAsync();
         tabelas.Should().ContainSingle(t =>
             t.DataInicioVigencia == new DateTime(2024, 1, 1) &&
             t.DataFimVigencia == new DateTime(2024, 12, 31) &&
@@ -52,37 +53,31 @@ public class TabelasPrecoControllerTests : TesteComBancoEmMemoria
     }
 
     [Fact]
-    public void Cadastrar_ComDataFimAnteriorADataInicio_NaoDevePersistirTabela()
+    public async Task Cadastrar_ComDataFimAnteriorADataInicio_NaoDevePersistirTabela()
     {
-        _controller.Cadastrar(new DateTime(2024, 12, 31), new DateTime(2024, 1, 1), 2.00m, 1.00m);
+        await _controller.Cadastrar(new DateTime(2024, 12, 31), new DateTime(2024, 1, 1), 2.00m, 1.00m);
 
-        _tabelaPrecoRepositorio.ObterTodas().Should().BeEmpty();
+        (await _tabelaPrecoRepositorio.ObterTodasAsync()).Should().BeEmpty();
     }
 
     [Fact]
-    public void Cadastrar_ComVigenciaSobrepostaAOutraExistente_NaoDevePersistirNovaTabela()
+    public async Task Cadastrar_ComVigenciaSobrepostaAOutraExistente_NaoDevePersistirNovaTabela()
     {
-        _controller.Cadastrar(new DateTime(2024, 1, 1), new DateTime(2024, 12, 31), 2.00m, 1.00m);
+        await _controller.Cadastrar(new DateTime(2024, 1, 1), new DateTime(2024, 12, 31), 2.00m, 1.00m);
 
-        _controller.Cadastrar(new DateTime(2024, 6, 1), new DateTime(2025, 6, 1), 3.00m, 1.50m);
+        await _controller.Cadastrar(new DateTime(2024, 6, 1), new DateTime(2025, 6, 1), 3.00m, 1.50m);
 
-        _tabelaPrecoRepositorio.ObterTodas().Should().ContainSingle();
+        (await _tabelaPrecoRepositorio.ObterTodasAsync()).Should().ContainSingle();
     }
 
     [Fact]
-    public void Index_QuandoExistemTabelas_DeveListarTodasNoModel()
+    public async Task Index_QuandoExistemTabelas_DeveListarTodasNoModel()
     {
-        var tabela = new TabelaPreco
-        {
-            DataInicioVigencia = new DateTime(2024, 1, 1),
-            DataFimVigencia = new DateTime(2024, 12, 31),
-            ValorHoraInicial = 2.00m,
-            ValorHoraAdicional = 1.00m
-        };
+        var tabela = new TabelaPreco(new DateTime(2024, 1, 1), new DateTime(2024, 12, 31), 2.00m, 1.00m);
         _tabelaPrecoRepositorio.Adicionar(tabela);
-        _tabelaPrecoRepositorio.Salvar();
+        await _tabelaPrecoRepositorio.SalvarAsync();
 
-        var resultado = _controller.Index();
+        var resultado = await _controller.Index();
 
         var viewResult = resultado.Should().BeOfType<ViewResult>().Subject;
         var model = viewResult.Model.Should().BeAssignableTo<IEnumerable<TabelaPreco>>().Subject;

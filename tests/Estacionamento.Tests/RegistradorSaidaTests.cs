@@ -11,7 +11,7 @@ namespace Estacionamento.Tests;
 public class RegistradorDeSaidaTests : TesteComBancoEmMemoria
 {
     [Fact]
-    public void Registrar_QuandoExisteRegistroAbertoETabelaVigente_DeveCalcularERegistrarValorPago()
+    public async Task Registrar_QuandoExisteRegistroAbertoETabelaVigente_DeveCalcularERegistrarValorPago()
     {
         var registroRepositorio = new RegistroEstacionamentoRepositorio(Contexto);
         var tabelaPrecoRepositorio = new TabelaPrecoRepositorio(Contexto);
@@ -19,17 +19,11 @@ public class RegistradorDeSaidaTests : TesteComBancoEmMemoria
         var dataEntrada = new DateTime(2024, 5, 10, 8, 0, 0);
         var registro = new RegistroEstacionamento("ABC1234", dataEntrada);
         registroRepositorio.Adicionar(registro);
-        registroRepositorio.Salvar();
+        await registroRepositorio.SalvarAsync();
 
-        var tabela = new TabelaPreco
-        {
-            DataInicioVigencia = new DateTime(2024, 1, 1),
-            DataFimVigencia = new DateTime(2024, 12, 31),
-            ValorHoraInicial = 2.00m,
-            ValorHoraAdicional = 1.00m
-        };
+        var tabela = new TabelaPreco(new DateTime(2024, 1, 1), new DateTime(2024, 12, 31), 2.00m, 1.00m);
         tabelaPrecoRepositorio.Adicionar(tabela);
-        tabelaPrecoRepositorio.Salvar();
+        await tabelaPrecoRepositorio.SalvarAsync();
 
         var registrador = new RegistradorDeSaida(
             registroRepositorio,
@@ -39,7 +33,7 @@ public class RegistradorDeSaidaTests : TesteComBancoEmMemoria
         );
 
         var dataSaida = new DateTime(2024, 5, 10, 9, 0, 0);
-        registrador.Registrar("ABC1234", dataSaida);
+        await registrador.RegistrarAsync("ABC1234", dataSaida);
 
         var registroPersistido = Contexto.RegistrosEstacionamento.Single(r => r.Placa == "ABC1234");
 
@@ -48,7 +42,7 @@ public class RegistradorDeSaidaTests : TesteComBancoEmMemoria
     }
 
     [Fact]
-    public void Registrar_QuandoNaoExisteRegistroAbertoParaAPlaca_DeveLancarExcecao()
+    public async Task Registrar_QuandoNaoExisteRegistroAbertoParaAPlaca_DeveLancarExcecao()
     {
         var registroRepositorio = new RegistroEstacionamentoRepositorio(Contexto);
         var tabelaPrecoRepositorio = new TabelaPrecoRepositorio(Contexto);
@@ -59,9 +53,8 @@ public class RegistradorDeSaidaTests : TesteComBancoEmMemoria
             new SeletorDeTabelaPreco(),
             new CalculadoraTarifa());
 
-        var acao = () => registrador.Registrar("XYZ9999", new DateTime(2024, 5, 10, 9, 0, 0));
+        var acao = () => registrador.RegistrarAsync("XYZ9999", new DateTime(2024, 5, 10, 9, 0, 0));
 
-        acao.Should().Throw<InvalidOperationException>();
+        await acao.Should().ThrowAsync<InvalidOperationException>();
     }
-    
 }
